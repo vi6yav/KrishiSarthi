@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #1a1a1a;
+
+  /* KrishiSarthi brand palette — inspired by the Indian flag */
+  --color-saffron: #FF9933;
+  --color-saffron-dark: #E67E22;
+  --color-green: #138808;
+  --color-green-dark: #0D6606;
+  --color-navy: #0A2540;
+  --color-navy-light: #16406B;
+  --color-offwhite: #F7F7F5;
+  --color-chakra: #1F3A93;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-saffron: var(--color-saffron);
+  --color-saffron-dark: var(--color-saffron-dark);
+  --color-green: var(--color-green);
+  --color-green-dark: var(--color-green-dark);
+  --color-navy: var(--color-navy);
+  --color-navy-light: var(--color-navy-light);
+  --color-offwhite: var(--color-offwhite);
+  --color-chakra: var(--color-chakra);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
