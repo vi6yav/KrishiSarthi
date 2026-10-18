@@ -1,6 +1,11 @@
-from fastapi import APIRouter, HTTPException
+import logging
 
+from fastapi import APIRouter, HTTPException, Query, Request
+
+from app.limiter import limiter
 from app.services.mandi import fetch_mandi_prices
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -39,11 +44,21 @@ def ping():
 
 
 @router.get("/live")
-def get_live_prices(state: str | None = None, commodity: str | None = None, limit: int = 20):
+@limiter.limit("20/minute")
+def get_live_prices(
+    request: Request,
+    state: str | None = Query(default=None, max_length=50),
+    commodity: str | None = Query(default=None, max_length=80),
+    limit: int = Query(default=20, ge=1, le=100),
+):
     try:
         records = fetch_mandi_prices(state=state, commodity=commodity, limit=limit)
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Could not reach mandi data source: {str(e)}")
+    except Exception:
+        logger.exception("Mandi price fetch failed")
+        raise HTTPException(
+            status_code=502,
+            detail="Could not reach the mandi data source. Please try again in a moment.",
+        )
 
     results = []
     for r in records:

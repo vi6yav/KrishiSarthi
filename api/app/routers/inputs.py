@@ -1,8 +1,13 @@
-from fastapi import APIRouter, HTTPException, Query
+import logging
 from typing import Literal
 
+from fastapi import APIRouter, HTTPException, Query, Request
+
+from app.limiter import limiter
 from app.services.fertilizer import get_fertilizer_recommendation
 from app.services.irrigation import get_irrigation_recommendation
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -13,7 +18,9 @@ def ping():
 
 
 @router.get("/recommendation")
+@limiter.limit("20/minute")
 def get_recommendation(
+    request: Request,
     crop: str,
     growth_stage: Literal["sowing", "tillering", "flowering"],
     soil_type: Literal["sandy", "loamy", "clay"],
@@ -30,8 +37,12 @@ def get_recommendation(
 
     try:
         irrigation = get_irrigation_recommendation(latitude, longitude)
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Could not fetch weather data: {str(e)}")
+    except Exception:
+        logger.exception("Weather fetch failed")
+        raise HTTPException(
+            status_code=502,
+            detail="Could not fetch weather data. Please try again in a moment.",
+        )
 
     return {
         "fertilizer": fertilizer,

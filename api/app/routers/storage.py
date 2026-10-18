@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 
+from app.limiter import limiter
 from app.services.storage import get_spoilage_risk
 
 router = APIRouter()
@@ -11,7 +12,9 @@ def ping():
 
 
 @router.get("/risk")
+@limiter.limit("20/minute")
 def get_risk(
+    request: Request,
     crop: str,
     harvest_date: str,
     has_cold_storage: bool = False,
