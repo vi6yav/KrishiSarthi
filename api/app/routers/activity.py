@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 from app.database import get_db
@@ -12,9 +12,9 @@ router = APIRouter()
 
 
 class ActivityCreate(BaseModel):
-    module: str
-    summary: str
-    detail: Optional[str] = None
+    module: str = Field(max_length=50)
+    summary: str = Field(max_length=300)
+    detail: Optional[str] = Field(default=None, max_length=1000)
 
 
 class ActivityOut(BaseModel):
