@@ -1,4 +1,5 @@
-import logging
+﻿import logging
+import os
 
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File
 
@@ -22,6 +23,13 @@ def ping():
 @router.post("/detect")
 @limiter.limit("6/minute")
 async def detect_disease(request: Request, file: UploadFile = File(...)):
+    # Switch: set PEST_ENABLED=false on the server to stop the AI model from loading
+    if os.getenv("PEST_ENABLED", "true").lower() != "true":
+        raise HTTPException(
+            status_code=503,
+            detail="Pest detection is temporarily unavailable. Please try again later.",
+        )
+
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
             status_code=400,
