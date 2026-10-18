@@ -150,6 +150,7 @@ export default function PestPage() {
               <p className="text-xs font-medium uppercase tracking-wide text-navy-light/50">{t("topMatch")}</p>
               <p className="mt-1 text-lg font-bold text-navy">{formatLabel(result.top_label)}</p>
               <p className="text-sm text-navy-light/60">{result.top_confidence}% {t("confidence")}</p>
+              <p className="mt-2 text-xs text-navy-light/60">AI-generated guidance only, not professional agronomic advice. Please confirm with your local agriculture officer before spraying or treating crops.</p>
             </div>
 
             <div className="mt-4">

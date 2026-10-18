@@ -42,6 +42,19 @@ def log_activity(
     )
     db.add(activity)
     db.commit()
+        # Keep only each user's 100 newest entries, so the table can't grow forever
+    keep_ids = (
+        db.query(Activity.id)
+        .filter(Activity.user_id == current_user.id)
+        .order_by(Activity.created_at.desc(), Activity.id.desc())
+        .limit(100)
+        .subquery()
+    )
+    db.query(Activity).filter(
+        Activity.user_id == current_user.id,
+        ~Activity.id.in_(db.query(keep_ids.c.id)),
+    ).delete(synchronize_session=False)
+    db.commit()
     db.refresh(activity)
 
     return {"status": "logged", "id": activity.id}

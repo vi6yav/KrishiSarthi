@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useLanguage } from "../LanguageContext";
 import { API_BASE_URL } from "../apiConfig";
 
@@ -14,10 +15,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+        if (mode === "signup" && !agreed) {
+      setError("Please confirm you are 18 or older and accept the Terms and Privacy Policy.");
+      return;
+    }
     setLoading(true);
 
     const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/signup";
@@ -109,6 +115,22 @@ export default function LoginPage() {
             className="rounded-md border border-navy/20 px-4 py-2 text-navy outline-none focus:border-saffron"
           />
 
+          {mode === "signup" && (
+            <label className="flex items-start gap-2 text-sm text-navy">
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-1"
+              />
+              <span>
+                I am 18 or older and I accept the{" "}
+                <Link href="/terms" target="_blank" className="underline">Terms</Link> and{" "}
+                <Link href="/privacy" target="_blank" className="underline">Privacy Policy</Link>.
+              </span>
+            </label>
+          )}
+          
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <button
