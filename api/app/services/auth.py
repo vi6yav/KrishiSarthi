@@ -1,14 +1,20 @@
+import os
 from datetime import datetime, timedelta, timezone
 
+from dotenv import load_dotenv
 from jose import jwt
 from passlib.context import CryptContext
+
+load_dotenv()
 
 # bcrypt is the actual hashing algorithm; passlib gives us a clean interface to it
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# In a real production app this would come from an environment variable,
-# never hardcoded. Fine for local hackathon development.
-SECRET_KEY = "krishisarthi-dev-secret-change-this-later"
+# The key is read from the environment (Render), never written in code.
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY environment variable is not set")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # tokens stay valid for 24 hours
 
