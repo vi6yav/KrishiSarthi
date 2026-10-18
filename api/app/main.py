@@ -1,7 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.database import Base, engine
+from app.limiter import limiter
 from app.models import user, activity  # noqa: F401 — imported so SQLAlchemy registers the tables
 from app.routers import pest, prices, inputs, storage, auth, activity as activity_router
 
@@ -14,6 +18,11 @@ app = FastAPI(
                  "mandi price comparison, and cold storage management for KrishiSarthi.",
     version="0.1.0",
 )
+
+# Rate limiting (must be added BEFORE the CORS block below)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
