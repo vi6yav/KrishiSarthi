@@ -1,7 +1,9 @@
 ﻿import logging
 import os
 
+import requests
 from fastapi import APIRouter, HTTPException, Request, UploadFile, File
+from starlette.concurrency import run_in_threadpool
 
 from app.limiter import limiter
 from app.services.pest import predict_disease
@@ -15,6 +17,19 @@ MAX_FILE_SIZE_MB = 10
 MAX_FILE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
 
+def _call_space(image_bytes: bytes, content_type: str):
+    """Send the photo to the AI model hosted on a Hugging Face Space."""
+    url = os.getenv("PEST_SPACE_URL", "").rstrip("/") + "/detect"
+    response = requests.post(
+        url,
+        files={"file": ("leaf", image_bytes, content_type)},
+        headers={"X-Api-Key": os.getenv("PEST_SPACE_KEY", "")},
+        timeout=120,
+    )
+    response.raise_for_status()
+    return response.json()
+
+
 @router.get("/ping")
 def ping():
     return {"module": "pest-prediction", "status": "connected"}
@@ -23,8 +38,10 @@ def ping():
 @router.post("/detect")
 @limiter.limit("6/minute")
 async def detect_disease(request: Request, file: UploadFile = File(...)):
-    # Switch: set PEST_ENABLED=false on the server to stop the AI model from loading
-    if os.getenv("PEST_ENABLED", "true").lower() != "true":
+    use_space = bool(os.getenv("PEST_SPACE_URL"))
+
+    # Switch: with no Space configured, PEST_ENABLED=false stops the local AI model from loading
+    if not use_space and os.getenv("PEST_ENABLED", "true").lower() != "true":
         raise HTTPException(
             status_code=503,
             detail="Pest detection is temporarily unavailable. Please try again later.",
@@ -46,7 +63,10 @@ async def detect_disease(request: Request, file: UploadFile = File(...)):
         )
 
     try:
-        result = predict_disease(image_bytes)
+        if use_space:
+            result = await run_in_threadpool(_call_space, image_bytes, file.content_type)
+        else:
+            result = predict_disease(image_bytes)
     except Exception:
         logger.exception("Pest prediction failed")
         raise HTTPException(
