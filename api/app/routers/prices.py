@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.limiter import limiter
-from app.services.mandi import fetch_mandi_prices
+from app.services.mandi import fetch_mandi_prices, load_snapshot, filter_snapshot
 
 logger = logging.getLogger(__name__)
 
@@ -51,14 +51,27 @@ def get_live_prices(
     commodity: str | None = Query(default=None, max_length=80),
     limit: int = Query(default=20, ge=1, le=100),
 ):
-    try:
-        records = fetch_mandi_prices(state=state, commodity=commodity, limit=limit)
-    except Exception:
-        logger.exception("Mandi price fetch failed")
-        raise HTTPException(
-            status_code=502,
-            detail="Could not reach the mandi data source. Please try again in a moment.",
-        )
+    data_source = "live"
+    as_of = None
+    records = None
+
+    # On the free Render server the government API can't be reached, so MANDI_SNAPSHOT_ONLY=true skips it
+    if os.getenv("MANDI_SNAPSHOT_ONLY", "false").lower() != "true":
+        try:
+            records = fetch_mandi_prices(state=state, commodity=commodity, limit=limit)
+        except Exception:
+            logger.exception("Mandi price fetch failed")
+
+    if records is None:
+        snapshot = load_snapshot()
+        if snapshot is None:
+            raise HTTPException(
+                status_code=502,
+                detail="Could not reach the mandi data source. Please try again in a moment.",
+            )
+        records = filter_snapshot(snapshot, state, commodity, limit)
+        data_source = "snapshot"
+        as_of = snapshot.get("fetched_at")
 
     results = []
     for r in records:
@@ -88,4 +101,4 @@ def get_live_prices(
             "comparison": comparison,
         })
 
-    return {"count": len(results), "results": results}
+    return {"count": len(results), "results": results, "data_source": data_source, "as_of": as_of}

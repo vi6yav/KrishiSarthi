@@ -26,6 +26,7 @@ export default function PricesPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
+    const [note, setNote] = useState("");
 
   async function logActivity(summary: string, detail?: string) {
     const token = localStorage.getItem("krishisarthi_token");
@@ -61,6 +62,7 @@ export default function PricesPage() {
         setResults([]);
       } else {
         setResults(data.results);
+        setNote(data.data_source === "snapshot" ? `Showing saved prices from ${data.as_of}. Live government data is temporarily unreachable.` : "");
 
         if (data.results.length > 0) {
           const top = data.results[0];
@@ -113,6 +115,7 @@ export default function PricesPage() {
         </form>
 
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+        {note && <p className="mt-4 text-sm text-navy-light/70">{note}</p>}
 
         {searched && !loading && !error && results.length === 0 && (
           <p className="mt-8 text-navy-light/60">{t("noResultsFound")}</p>
